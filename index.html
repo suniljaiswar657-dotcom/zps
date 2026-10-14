@@ -409,6 +409,35 @@
             margin-bottom: 25px;
         }
 
+
+        /* CONTACT FORM */
+        .contact-form {
+            max-width: 620px;
+            margin: 28px auto 0;
+            display: grid;
+            gap: 14px;
+            text-align: left;
+        }
+        .contact-form label {
+            display: grid;
+            gap: 7px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+        .contact-form input,
+        .contact-form textarea {
+            width: 100%;
+            padding: 13px 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #080b14;
+            color: var(--text);
+            font: inherit;
+        }
+        .contact-form textarea { min-height: 120px; resize: vertical; }
+        .contact-form button { cursor: pointer; }
+        #contactStatus { min-height: 24px; color: var(--secondary); font-size: 14px; }
+
         /* FOOTER */
 
         footer {
@@ -849,7 +878,22 @@
                         a working foundation.
                     </p>
 
-                    <a href="#home" class="button button-primary">
+
+                    <form id="contactForm" class="contact-form">
+                        <label>Your name
+                            <input name="name" type="text" autocomplete="name" required maxlength="100">
+                        </label>
+                        <label>Email address
+                            <input name="email" type="email" autocomplete="email" required maxlength="254">
+                        </label>
+                        <label>Message
+                            <textarea name="message" required maxlength="5000"></textarea>
+                        </label>
+                        <button type="submit" class="button button-primary">Send Message</button>
+                        <p id="contactStatus" role="status" aria-live="polite"></p>
+                    </form>
+
+                    <a href="#home" class="button button-secondary">
                         Back to Top ↑
                     </a>
                 </div>
@@ -916,6 +960,53 @@
 
         document.getElementById("currentYear").textContent =
             new Date().getFullYear();
+
+        // Supabase contact form. Replace the placeholder with the project's publishable key.
+        const SUPABASE_URL = "https://sqtbwgcxipzdwfwgcanh.supabase.co";
+        const SUPABASE_PUBLISHABLE_KEY = "PASTE_YOUR_SUPABASE_PUBLISHABLE_KEY_HERE";
+        const contactForm = document.getElementById("contactForm");
+        const contactStatus = document.getElementById("contactStatus");
+
+        contactForm.addEventListener("submit", async function (event) {
+            event.preventDefault();
+            const submitButton = contactForm.querySelector('button[type="submit"]');
+            if (SUPABASE_PUBLISHABLE_KEY.includes("PASTE_YOUR")) {
+                contactStatus.textContent = "Setup pending: add your Supabase publishable key in the website code.";
+                return;
+            }
+            const formData = new FormData(contactForm);
+            const payload = {
+                name: String(formData.get("name") || "").trim(),
+                email: String(formData.get("email") || "").trim(),
+                message: String(formData.get("message") || "").trim()
+            };
+            submitButton.disabled = true;
+            contactStatus.textContent = "Sending...";
+            try {
+                const response = await fetch(SUPABASE_URL + "/rest/v1/contact_messages", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "apikey": SUPABASE_PUBLISHABLE_KEY,
+                        "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+                        "Prefer": "return=minimal"
+                    },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    const detail = await response.text();
+                    throw new Error("Request failed (" + response.status + "). " + detail);
+                }
+                contactForm.reset();
+                contactStatus.textContent = "Message sent successfully.";
+            } catch (error) {
+                console.error("Contact form error:", error);
+                contactStatus.textContent = "Message could not be sent. Check the Supabase key and table permissions.";
+            } finally {
+                submitButton.disabled = false;
+            }
+        });
+
     </script>
 
 </body>
